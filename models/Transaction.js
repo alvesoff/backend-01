@@ -165,7 +165,7 @@ const transactionSchema = new mongoose.Schema({
 
 // Índices para performance
 transactionSchema.index({ user: 1, createdAt: -1 });
-transactionSchema.index({ transactionId: 1 });
+// transactionId já tem índice único automático
 transactionSchema.index({ status: 1, type: 1 });
 transactionSchema.index({ 'pix.txId': 1 });
 transactionSchema.index({ externalId: 1 });

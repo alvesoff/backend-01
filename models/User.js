@@ -107,8 +107,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Índices para performance
-userSchema.index({ email: 1 });
-userSchema.index({ referralCode: 1 });
+// email e referralCode já têm índices únicos automáticos
 userSchema.index({ referredBy: 1 });
 userSchema.index({ createdAt: -1 });
 

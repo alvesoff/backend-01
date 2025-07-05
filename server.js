@@ -26,9 +26,7 @@ app.use('/api/', limiter);
 // CORS - Configurado para aceitar requisições do frontend na Vercel
 app.use(cors({
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
-    'http://localhost:3000',
-    'http://localhost:8000',
-    'https://furbyfront.vercel.app'
+    'https://frontend-01-theta.vercel.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -61,8 +59,6 @@ const connectDB = async () => {
     }
     
     await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000,
       maxPoolSize: 10,
       bufferCommands: false,
