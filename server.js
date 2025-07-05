@@ -9,8 +9,35 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares de Segurança
-app.use(helmet());
+// CORS - Deve vir ANTES do Helmet para evitar conflitos
+app.use(cors({
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.CORS_ORIGIN ? 
+      process.env.CORS_ORIGIN.split(',') : 
+      ['https://frontend-01-theta.vercel.app'];
+    
+    // Permitir requisições sem origin (ex: Postman, mobile apps)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
+}));
+
+// Middlewares de Segurança - Configurado para não interferir com CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -23,15 +50,15 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS - Configurado para aceitar requisições do frontend na Vercel
-app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
-    'https://frontend-01-theta.vercel.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Middleware para tratar requisições OPTIONS (preflight)
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 horas
+  res.sendStatus(200);
+});
 
 // Body Parser
 app.use(express.json({ limit: '10mb' }));
@@ -71,6 +98,21 @@ const connectDB = async () => {
     throw error;
   }
 };
+
+// Middleware de debug para CORS
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('Headers:', req.headers);
+  
+  // Definir headers CORS manualmente como backup
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'https://frontend-01-theta.vercel.app');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  next();
+});
 
 // Middleware para conectar ao DB antes de cada request
 app.use(async (req, res, next) => {
